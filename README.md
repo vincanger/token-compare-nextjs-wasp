@@ -4,33 +4,33 @@
 
 A side-by-side token count comparison of [Next.js](https://github.com/vercel/next.js) and [Wasp](https://github.com/wasp-lang/wasp) (a full-stack React, Node.js, and Prisma framework with for the AI era). 
 
-We took [Vercel's official Next.js SaaS starter](https://github.com/nextjs/saas-starter) and rebuilt it as a Wasp app, then measured the token count and overall DX. All logic was kept intact and only framework-specific changes were made. 
-
-<img width="45%" alt="saas-wasp" src="https://github.com/user-attachments/assets/9b187bfa-8d38-4e53-b638-401a3bb4dcf1" />
-
 ## TL;DR
 
-| Metric | Next.js | Wasp | Wasp's reduction over Next.js |
+| Metric | Next.js | Wasp | ♻️ Wasp's reduction over Next.js |
 |---|---:|---:|---:|
 | Total files | 47 | 32 | 32% |
 | Total lines | 3,997 | 2,316 | 42% |
 | Total tokens | 30,329 | 18,645 | 39% |
-| App-specific tokens (excl shared UI) | 26,325 | 14,973 | 43% |
+| App-specific tokens (excl shared UI) | 26,325 | **14,973** | **⭐️ 43%** |
 
 ## What Was Measured
 
-Measured with [tiktoken](https://github.com/openai/tiktoken) across all developer-written source files (excludes `node_modules`, lock files, `.git`, build output, auto-generated migrations).
+<img width="45%" alt="saas-wasp" src="https://github.com/user-attachments/assets/9b187bfa-8d38-4e53-b638-401a3bb4dcf1" />
+
+We took [Vercel's official Next.js SaaS starter](https://github.com/nextjs/saas-starter) and rebuilt it as a Wasp app, then measured the token count and overall DX. All logic was kept intact and only framework-specific changes were made. 
+
+Count was done with OpenAI's [tiktoken](https://github.com/openai/tiktoken) across all developer-written source files only (excludes `node_modules`, lock files, `.git`, build output, auto-generated migrations).
 
 ## Wasp's Token Count Reduction
 
 - **15 files eliminated**
 - **11,352 app-specific tokens saved** — 43% less context an AI needs to understand and work with the codebase
-- The **biggest savings come from auth** (4,954 → 622 tokens, **87% reduction**) and **database** (3,832 → 440 tokens in `schema.prisma`, **89% reduction**) — Wasp handles all the boilerplate internally.
-- App-specific token savings (**43%**) are more meaningful than total savings (39%) because shared UI inflates both sides equally.
+- Major savings come from auth (4,954 → 622 tokens, **87% reduction**) and **database** (3,832 → 440 tokens in `schema.prisma`, **89% reduction**) — Wasp handles all the boilerplate internally.
+- **App-specific token savings** (**43%**) are more meaningful than total savings (39%) because shared UI inflates both sides equally.
 
 ## Why Token Count & Context Efficiency Matter in the AI Era
 
-AI coding agents and tools (i.e. LLMs) operate within fixed context windows. Every token of boilerplate, configuration, and glue code that an agent has to ingest is a token *not* spent on understanding your actual business logic. When your codebase is leaner, AI tools can:
+AI coding agents and tools (i.e. LLMs) operate within fixed context windows. Every token of boilerplate, configuration, and glue code that an agent has to ingest is a token *not* spent on understanding your actual business logic. What's worse is that as [context windows fill up, agent performance degrades](https://research.trychroma.com/context-rot). So when your codebase is context-efficient, AI tools can:
 
 - **Understand more of your app at once** 
 - **Generate code faster and more accurately** 
