@@ -1,4 +1,7 @@
-# Framework Token Count & Context Efficiency Comparison: Next.js vs Wasp
+
+<img width="1352" height="759" alt="saas-wasp" src="https://github.com/user-attachments/assets/9b187bfa-8d38-4e53-b638-401a3bb4dcf1" />
+
+# Framework Token Count & Context Window Efficiency Comparison: Next.js vs Wasp
 
 A side-by-side token count and overall DX comparison of Next.js vs Wasp (a full-stack React, Node.js, and Prisma framework with for the AI era). 
 
