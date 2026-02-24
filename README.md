@@ -1,17 +1,14 @@
 
-<img width="1352" height="759" alt="saas-wasp" src="https://github.com/user-attachments/assets/9b187bfa-8d38-4e53-b638-401a3bb4dcf1" />
 
-# Framework Token Count & Context Window Efficiency Comparison: Next.js vs Wasp
+# Framework Token Count Comparison: Next.js vs Wasp
 
-A side-by-side token count and overall DX comparison of Next.js vs Wasp (a full-stack React, Node.js, and Prisma framework with for the AI era). 
+A side-by-side token count comparison of [Next.js](https://github.com/vercel/next.js) and [Wasp](https://github.com/wasp-lang/wasp) (a full-stack React, Node.js, and Prisma framework with for the AI era). 
 
-We took [Vercel's official Next.js SaaS starter](https://github.com/nextjs/saas-starter) and ported it as a Wasp app, then measured the token count and overall DX.
+We took [Vercel's official Next.js SaaS starter](https://github.com/nextjs/saas-starter) and rebuilt it as a Wasp app, then measured the token count and overall DX. All logic was kept intact and only framework-specific changes were made. 
 
-# Token Count Comparison: Next.js vs Wasp SaaS Starter
+<img width="45%" alt="saas-wasp" src="https://github.com/user-attachments/assets/9b187bfa-8d38-4e53-b638-401a3bb4dcf1" />
 
-Measured with [tiktoken](https://github.com/openai/tiktoken) across all developer-written source files (excludes `node_modules`, lock files, `.git`, build output, auto-generated migrations).
-
-## Summary
+## TL;DR
 
 | Metric | Next.js | Wasp | Wasp's reduction over Next.js |
 |---|---:|---:|---:|
@@ -20,6 +17,9 @@ Measured with [tiktoken](https://github.com/openai/tiktoken) across all develope
 | Total tokens | 30,329 | 18,645 | 39% |
 | App-specific tokens (excl shared UI) | 26,325 | 14,973 | 43% |
 
+## What Was Measured
+
+Measured with [tiktoken](https://github.com/openai/tiktoken) across all developer-written source files (excludes `node_modules`, lock files, `.git`, build output, auto-generated migrations).
 
 ## Wasp's Token Count Reduction
 
