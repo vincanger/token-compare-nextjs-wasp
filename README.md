@@ -25,7 +25,7 @@ Count was done with OpenAI's [tiktoken](https://github.com/openai/tiktoken) acro
 
 - **15 files eliminated**
 - **11,352 app-specific tokens saved** — 43% less context an AI needs to understand and work with the codebase
-- Major savings come from auth (4,954 → 622 tokens, **87% reduction**) and **database** (3,832 → 440 tokens in `schema.prisma`, **89% reduction**) — Wasp handles all the boilerplate internally.
+- Major savings come from **auth** (4,954 → 622 tokens, **87% reduction**) and **database** (3,832 → 440 tokens in `schema.prisma`, **89% reduction**) — Wasp handles all the boilerplate internally.
 - **App-specific token savings** (**43%**) are more meaningful than total savings (39%) because shared UI inflates both sides equally.
 
 ## Why Token Count & Context Efficiency Matter in the AI Era
