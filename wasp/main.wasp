@@ -1,0 +1,171 @@
+app saasStarter {
+  wasp: {
+    version: "^0.21.0"
+  },
+  title: "SaaS Starter",
+  auth: {
+    userEntity: User,
+    methods: {
+      email: {
+        fromField: {
+          name: "SaaS App",
+          email: "hello@example.com"
+        },
+        emailVerification: {
+          clientRoute: EmailVerificationRoute,
+        },
+        passwordReset: {
+          clientRoute: PasswordResetRoute,
+        },
+      },
+    },
+    onAfterSignup: import { onAfterSignup } from "@src/auth/hooks",
+    onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/dashboard",
+  },
+  db: {
+    seeds: [
+      import { createStripeProductsAndPrices } from "@src/dbSeeds",
+    ],
+  },
+  emailSender: {
+    provider: Dummy,
+  },
+  client: {
+    rootComponent: import { Root } from "@src/Root",
+  },
+}
+
+// ── Auth Routes ──────────────────────────────────────────────
+
+route LoginRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import { LoginPage } from "@src/auth/AuthPages"
+}
+
+route SignupRoute { path: "/signup", to: SignupPage }
+page SignupPage {
+  component: import { SignupPage } from "@src/auth/AuthPages"
+}
+
+route EmailVerificationRoute { path: "/email-verification", to: EmailVerificationPage }
+page EmailVerificationPage {
+  component: import { EmailVerificationPage } from "@src/auth/AuthPages"
+}
+
+route RequestPasswordResetRoute { path: "/request-password-reset", to: RequestPasswordResetPage }
+page RequestPasswordResetPage {
+  component: import { RequestPasswordResetPage } from "@src/auth/AuthPages"
+}
+
+route PasswordResetRoute { path: "/password-reset", to: PasswordResetPage }
+page PasswordResetPage {
+  component: import { PasswordResetPage } from "@src/auth/AuthPages"
+}
+
+// ── Marketing Routes ─────────────────────────────────────────
+
+route LandingRoute { path: "/", to: LandingPage }
+page LandingPage {
+  component: import { LandingPage } from "@src/landing/LandingPage"
+}
+
+route PricingRoute { path: "/pricing", to: PricingPage }
+page PricingPage {
+  component: import { PricingPage } from "@src/landing/PricingPage"
+}
+
+// ── Dashboard Routes ─────────────────────────────────────────
+
+route DashboardRoute { path: "/dashboard", to: DashboardPage }
+page DashboardPage {
+  authRequired: true,
+  component: import { DashboardPage } from "@src/dashboard/DashboardPage"
+}
+
+route GeneralRoute { path: "/dashboard/general", to: GeneralPage }
+page GeneralPage {
+  authRequired: true,
+  component: import { GeneralPage } from "@src/dashboard/GeneralPage"
+}
+
+route ActivityRoute { path: "/dashboard/activity", to: ActivityPage }
+page ActivityPage {
+  authRequired: true,
+  component: import { ActivityPage } from "@src/dashboard/ActivityPage"
+}
+
+route SecurityRoute { path: "/dashboard/security", to: SecurityPage }
+page SecurityPage {
+  authRequired: true,
+  component: import { SecurityPage } from "@src/dashboard/SecurityPage"
+}
+
+// ── Queries ──────────────────────────────────────────────────
+
+query getTeamForUser {
+  fn: import { getTeamForUser } from "@src/operations",
+  entities: [Team, TeamMember, User, Invitation]
+}
+
+query getActivityLogs {
+  fn: import { getActivityLogs } from "@src/operations",
+  entities: [ActivityLog, User]
+}
+
+query getStripePrices {
+  fn: import { getStripePrices } from "@src/payment/operations",
+  entities: []
+}
+
+query getStripeProducts {
+  fn: import { getStripeProducts } from "@src/payment/operations",
+  entities: []
+}
+
+query getCustomerPortalUrl {
+  fn: import { getCustomerPortalUrl } from "@src/payment/operations",
+  entities: [Team, TeamMember]
+}
+
+// ── Actions ──────────────────────────────────────────────────
+
+action updateAccount {
+  fn: import { updateAccount } from "@src/operations",
+  entities: [User, TeamMember, ActivityLog]
+}
+
+action deleteAccount {
+  fn: import { deleteAccount } from "@src/operations",
+  entities: [User, TeamMember, ActivityLog]
+}
+
+action updatePassword {
+  fn: import { updatePassword } from "@src/operations",
+  entities: [User, TeamMember, ActivityLog]
+}
+
+action removeTeamMember {
+  fn: import { removeTeamMember } from "@src/operations",
+  entities: [TeamMember, ActivityLog]
+}
+
+action inviteTeamMember {
+  fn: import { inviteTeamMember } from "@src/operations",
+  entities: [User, TeamMember, Invitation, ActivityLog]
+}
+
+action generateCheckoutSession {
+  fn: import { generateCheckoutSession } from "@src/payment/operations",
+  entities: [Team, TeamMember]
+}
+
+// ── Stripe Webhook API ───────────────────────────────────────
+
+api stripeWebhook {
+  fn: import { stripeWebhook } from "@src/payment/webhook",
+  httpRoute: (POST, "/api/stripe/webhook"),
+  entities: [Team],
+  auth: false,
+  middlewareConfigFn: import { stripeWebhookMiddleware } from "@src/payment/webhook"
+}

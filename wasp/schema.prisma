@@ -1,0 +1,73 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String?
+  role      String    @default("member")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  teamMembers    TeamMember[]
+  activityLogs   ActivityLog[]
+  invitationsSent Invitation[]
+}
+
+model Team {
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripeProductId      String?
+  planName             String?
+  subscriptionStatus   String?
+
+  teamMembers  TeamMember[]
+  activityLogs ActivityLog[]
+  invitations  Invitation[]
+}
+
+model TeamMember {
+  id       Int      @id @default(autoincrement())
+  role     String
+  joinedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId Int
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  action    String
+  timestamp DateTime @default(now())
+  ipAddress String?
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  teamId Int
+  user   User?  @relation(fields: [userId], references: [id])
+  userId String?
+}
+
+model Invitation {
+  id        Int      @id @default(autoincrement())
+  email     String
+  role      String
+  status    String   @default("pending")
+  invitedAt DateTime @default(now())
+
+  team      Team   @relation(fields: [teamId], references: [id])
+  teamId    Int
+  invitedBy User   @relation(fields: [invitedById], references: [id])
+  invitedById String
+}
