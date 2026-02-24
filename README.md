@@ -38,7 +38,7 @@ AI coding agents and tools (i.e. LLMs) operate within fixed context windows. Eve
 
 ### How Wasp's Config-Driven Approach Helps
 
-Wasp's configuration and structure isn't just a way to reduce boilerplate and token usage, it's a **high-level map of your entire app**. Via the `main.wasp` or `main.wasp.ts` files, an AI agent understands your routes, pages, auth methods, database, operations, and background jobs, all declared in a structured, predictable format.
+Wasp's configuration and structure isn't just a way to reduce boilerplate and token usage, it's a **high-level map of your entire app**. Via the [`main.wasp` or `main.wasp.ts` files](./wasp/main.wasp), an AI agent understands your routes, pages, auth methods, database, operations, and background jobs, all declared in a structured, predictable format.
 
 This means:
 1. **Instant app understanding** — instead of crawling numerous files to piece together how the app works, an AI agent reads the config and knows the full architecture and functionality.
