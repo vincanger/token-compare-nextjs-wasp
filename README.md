@@ -1,25 +1,78 @@
+# Framework Comparison: Next.js vs Wasp — Context Efficiency & AI Code Generation
 
+A side-by-side comparison of the same SaaS app built with [Next.js](https://github.com/vercel/next.js) and [Wasp](https://github.com/wasp-lang/wasp) (a full-stack React, Node.js, and Prisma framework for the AI era). 
 
-# Framework Token Count Comparison: Next.js vs Wasp
-
-A side-by-side token count comparison of the same app built with [Next.js](https://github.com/vercel/next.js) and [Wasp](https://github.com/wasp-lang/wasp) (a full-stack React, Node.js, and Prisma framework for the AI era). 
+We measured both the static token count difference *and* the real-world impact on AI code generation — giving Claude Code the same prompt for both apps and comparing how efficiently and accurately it builds a new feature.
 
 ## TL;DR
 
-| Metric | Next.js | Wasp | ♻️ Wasp's reduction over Next.js |
-|---|---:|---:|---:|
-| Total files | 47 | 32 | 32% |
-| Total lines | 3,997 | 2,316 | 42% |
-| Total tokens | 30,329 | 18,645 | 39% |
-| App-specific tokens (excl shared UI) | 26,325 | **14,973** | **⭐️ 43%** |
+### AI Code Generation Comparison
+
+Same prompt, same model (Claude Opus 4.6), same feature (Team Announcements touching all layers). Measured from Claude Code JSONL session transcripts:
+
+
+| Metric                       | Next.js   | Wasp      | Wasp's reduction |
+| ---------------------------- | --------- | --------- | ---------------- |
+| Implementation tokens        | 2,383,297 | 1,407,186 | **41%**          |
+| Implementation cost          | $5.83     | $3.49     | **40%**          |
+| API turns                    | 62        | 42        | 32%              |
+| Wall-clock time              | 3.7m      | 2.6m      | 30%              |
+| Output tokens (code written) | 5,416     | 5,395     | ~same            |
+
+
+### Static Codebase Comparison
+
+
+| Metric                               | Next.js | Wasp       | Wasp's reduction |
+| ------------------------------------ | ------- | ---------- | ---------------- |
+| Total files                          | 47      | 32         | 32%              |
+| Total lines                          | 3,997   | 2,316      | 42%              |
+| Total tokens                         | 30,329  | 18,645     | 39%              |
+| App-specific tokens (excl shared UI) | 26,325  | **14,973** | **43%**          |
+
+
+The 41% token reduction during AI generation tracks almost exactly with the 43% fewer app-specific tokens in the codebase — the smaller context directly translates to fewer tokens consumed per turn.
 
 ## What Was Measured
 
-<img width="45%" alt="saas-wasp" src="https://github.com/user-attachments/assets/9b187bfa-8d38-4e53-b638-401a3bb4dcf1" />
 
-We took [Vercel's official Next.js SaaS starter](https://github.com/nextjs/saas-starter) and rebuilt it as a Wasp app, then measured the token count. All logic was kept intact and only framework-specific changes were made. 
 
-Count was done with OpenAI's [tiktoken](https://github.com/openai/tiktoken) across all developer-written source files only (excludes `node_modules`, lock files, `.git`, build output, auto-generated migrations).
+We took [Vercel's official Next.js SaaS starter](https://github.com/nextjs/saas-starter) and rebuilt it as a Wasp app, then measured the token count. All logic was kept intact and only framework-specific changes were made.
+
+Static token count was done with OpenAI's [tiktoken](https://github.com/openai/tiktoken) across all developer-written source files only (excludes `node_modules`, lock files, `.git`, build output, auto-generated migrations). AI generation metrics were extracted from Claude Code session transcripts using `measure_code_generation.py`.
+
+## How to Reproduce
+
+### Static Token Count
+
+```bash
+pip install tiktoken
+python count_static_tokens.py
+```
+
+### AI Generation Measurement
+
+After running identical prompts through Claude Code for each framework (see `[code-generation-test.md](./code-generation-test.md)` for the full test protocol), extract metrics from the session transcripts:
+
+```bash
+python measure_code_generation.py <transcript.jsonl> [transcript2.jsonl ...]
+```
+
+`measure_code_generation.py` parses Claude Code JSONL session transcripts and reports:
+
+- **Token usage** — input, output, cache read, cache creation (per session and grand total)
+- **Cost** — computed from per-model pricing (Opus, Sonnet, Haiku), including subagent estimates
+- **Tool use counts** — Read, Edit, Write, Bash, Glob, Grep, Task, etc.
+- **Files touched** — unique files read, edited, and created
+- **Subagent metrics** — tokens, tool uses, and duration for each spawned subagent
+- **Wall-clock time** — derived from first/last timestamps in the transcript
+
+Handles variable session counts (single file or multiple for plan + implement), variable numbers of subagents, and mixed models. Quick side-by-side:
+
+```bash
+echo "=== WASP ===" && python3 measure_code_generation.py ~/.claude/projects/*wasp*/*.jsonl
+echo "=== NEXT.JS ===" && python3 measure_code_generation.py ~/.claude/projects/*nextjs*/*.jsonl
+```
 
 ## Wasp's Token Count Reduction
 
@@ -34,13 +87,14 @@ AI coding agents and tools (i.e. LLMs) operate within fixed context windows. Eve
 
 - **Understand more of your app at once** 
 - **Generate code faster and more accurately** 
-- **Generate more complex app code** 
+- **Generate more complex app code**
 
 ### How Wasp's Config-Driven Approach Helps
 
-Wasp's configuration and structure isn't just a way to reduce boilerplate and token usage, it's a **high-level map of your entire app**. Via the [`main.wasp` or `main.wasp.ts` files](./wasp/main.wasp), an AI agent understands your routes, pages, auth methods, database, operations, and background jobs, all declared in a structured, predictable format.
+Wasp's configuration and structure isn't just a way to reduce boilerplate and token usage, it's a **high-level map of your entire app**. Via the `[main.wasp` or `main.wasp.ts` files](./wasp/main.wasp), an AI agent understands your routes, pages, auth methods, database, operations, and background jobs, all declared in a structured, predictable format.
 
 This means:
+
 1. **Instant app understanding** — instead of crawling numerous files to piece together how the app works, an AI agent reads the config and knows the full architecture and functionality.
 2. **Agents work more efficiently** — reduced token usage directly impacts cost and speed. A 40-60% reduction in tokens compounds across every prompt, every edit, and every agent loop, making sure generations stay coherent as the app grows.
 3. **Clear guardrails for code generation** — the config defines *where* and *how* code should be written. Operations have typed inputs/outputs, pages have defined routes, entities have schemas. This structure prevents AI tools from generating code that doesn't fit the app's patterns.
@@ -48,17 +102,19 @@ This means:
 
 ## What Wasp Eliminates
 
-| Next.js Files Eliminated | Why Not Needed in Wasp |
-|---|---|
-| `docker-compose.yml` (local Postgres) | `wasp start db` spins up a managed Postgres container automatically |
-| `lib/auth/session.ts` (JWT/cookie handling) | Wasp manages sessions internally via Lucia |
-| `lib/auth/middleware.ts` (auth wrappers) | Wasp provides `context.user` on every operation |
-| `middleware.ts` (global route protection) | `authRequired: true` on page declarations |
-| `lib/db/setup.ts` (interactive env/DB setup) | `wasp start db` manages Postgres; auth secrets are internal; no setup script needed |
-| `lib/db/queries.ts` (DB query functions) | Wasp operations access entities directly via `context.entities` |
-| `postcss.config.mjs` | Wasp uses `@tailwindcss/vite` plugin — no PostCSS config needed |
-| `app/(login)/sign-in/page.tsx`, `sign-up/page.tsx` | Wasp auth route declarations + built-in form components |
-| `app/api/team/route.ts`, `app/api/user/route.ts` | Become Wasp queries with automatic API generation |
+
+| Next.js Files Eliminated                           | Why Not Needed in Wasp                                                              |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `docker-compose.yml` (local Postgres)              | `wasp start db` spins up a managed Postgres container automatically                 |
+| `lib/auth/session.ts` (JWT/cookie handling)        | Wasp manages sessions internally via Lucia                                          |
+| `lib/auth/middleware.ts` (auth wrappers)           | Wasp provides `context.user` on every operation                                     |
+| `middleware.ts` (global route protection)          | `authRequired: true` on page declarations                                           |
+| `lib/db/setup.ts` (interactive env/DB setup)       | `wasp start db` manages Postgres; auth secrets are internal; no setup script needed |
+| `lib/db/queries.ts` (DB query functions)           | Wasp operations access entities directly via `context.entities`                     |
+| `postcss.config.mjs`                               | Wasp uses `@tailwindcss/vite` plugin — no PostCSS config needed                     |
+| `app/(login)/sign-in/page.tsx`, `sign-up/page.tsx` | Wasp auth route declarations + built-in form components                             |
+| `app/api/team/route.ts`, `app/api/user/route.ts`   | Become Wasp queries with automatic API generation                                   |
+
 
 ### Setup & Infrastructure Scripts
 
@@ -72,41 +128,3 @@ The setup script has no equivalent in the Wasp version because:
 - **User/team seeding**: Wasp's `onAfterSignup` hook automatically creates a team and membership when any user signs up — no seed script needed for the core flow.
 
 The Stripe product seeding is handled by Wasp's built-in `db.seeds` feature (`wasp db seed`), which is included in the Wasp token count.
-
-## Category Breakdown
-
-### Next.js (47 files, 30,329 tokens)
-
-| Category | Files | Tokens |
-|---|---:|---:|
-| config | 8 | 1,345 |
-| db | 5 | 3,832 |
-| auth | 6 | 4,954 |
-| payment | 4 | 2,051 |
-| api_routes | 2 | 68 |
-| layouts | 4 | 1,922 |
-| dashboard_pages | 5 | 4,790 |
-| marketing_pages | 4 | 4,353 |
-| styles | 2 | 3,010 |
-| shared_ui | 7 | 4,004 |
-
-### Wasp (32 files, 18,645 tokens)
-
-| Category | Files | Tokens |
-|---|---:|---:|
-| config | 6 | 2,463 |
-| auth | 2 | 622 |
-| operations | 2 | 1,510 |
-| payment | 3 | 1,137 |
-| layouts | 3 | 1,274 |
-| dashboard_pages | 4 | 3,993 |
-| marketing_pages | 3 | 2,973 |
-| styles | 2 | 1,001 |
-| shared_ui | 7 | 3,672 |
-
-## How to Reproduce
-
-```bash
-pip install tiktoken
-python count_tokens.py
-```
