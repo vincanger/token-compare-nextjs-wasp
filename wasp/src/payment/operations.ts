@@ -4,7 +4,7 @@ import type {
   GetCustomerPortalUrl,
   GenerateCheckoutSession,
 } from 'wasp/server/operations'
-import { HttpError } from 'wasp/server'
+import { HttpError, env } from 'wasp/server'
 import { stripe } from './stripe'
 
 export const getStripePrices: GetStripePrices<void, any> = async () => {
@@ -58,7 +58,7 @@ export const getCustomerPortalUrl: GetCustomerPortalUrl<void, string> = async (
 
   const session = await stripe.billingPortal.sessions.create({
     customer: membership.team.stripeCustomerId,
-    return_url: `${process.env.WASP_WEB_CLIENT_URL}/dashboard`,
+    return_url: `${env.WASP_WEB_CLIENT_URL}/dashboard`,
   })
 
   return session.url
@@ -81,13 +81,13 @@ export const generateCheckoutSession: GenerateCheckoutSession<
     payment_method_types: ['card'],
     line_items: [{ price: priceId, quantity: 1 }],
     mode: 'subscription',
-    success_url: `${process.env.WASP_WEB_CLIENT_URL}/dashboard`,
-    cancel_url: `${process.env.WASP_WEB_CLIENT_URL}/pricing`,
+    success_url: `${env.WASP_WEB_CLIENT_URL}dashboard`,
+    cancel_url: `${env.WASP_WEB_CLIENT_URL}pricing`,
     customer: membership.team.stripeCustomerId || undefined,
     client_reference_id: context.user.id,
     allow_promotion_codes: true,
     subscription_data: {
-      trial_period_days: 14,
+      trial_period_days: 7,
     },
   })
 

@@ -60,9 +60,10 @@ Follow the existing patterns in the codebase for all of the above.
 1. `cd` into the project directory
 2. Start a **fresh** Claude Code session (no prior context)
 3. Paste the exact prompt
-5. **Do not intervene** — no follow-ups, no corrections, no hints
-6. When Claude says "done", ask it to run the [post session measurement guide](#post-session-measurement-guide).
-7. Make sure each app compiles and the feature works.
+4. **Do not intervene** — no follow-ups, no corrections, no hints
+5. When Claude says "done", note the timestamp from the terminal
+6. **Exit the session immediately** (`/exit` or Ctrl+C) — do NOT continue chatting, running commands, or asking questions in the same session. Any additional conversation inflates the transcript and contaminates the metrics.
+7. Start a **new** session to verify the app compiles and the feature works.
 
 ## Post-Session Measurement Guide
 
@@ -90,6 +91,55 @@ python3 measure_code_generation.py ~/.claude/projects/-...-nextjs/abc123.jsonl
 python3 measure_code_generation.py ~/.claude/projects/-...-wasp/plan-uuid.jsonl ~/.claude/projects/-...-wasp/impl-uuid.jsonl
 ```
 
+### Trimming contaminated transcripts
+
+If you accidentally continued chatting after implementation finished, use `--end-timestamp` to exclude the extra conversation:
+
+```bash
+# Only count metrics up to the completion timestamp
+python3 measure_code_generation.py --end-timestamp 2026-02-25T19:12:00Z transcript.jsonl
+```
+
+To find the right cutoff timestamp, look for the assistant's "done" / summary message in the transcript:
+```bash
+# Show timestamps and text of assistant messages (find the completion message)
+python3 -c "
+import json, sys
+for i, line in enumerate(open(sys.argv[1])):
+    d = json.loads(line)
+    if d.get('type') != 'assistant': continue
+    content = d.get('message', {}).get('content', [])
+    for b in (content if isinstance(content, list) else []):
+        if isinstance(b, dict) and b.get('type') == 'text' and b.get('text', '').strip():
+            print(f'[{i}] {d.get(\"timestamp\",\"?\")} {b[\"text\"][:120]}')
+" transcript.jsonl
+```
+
+### Verifying subagent model parity
+
+Claude Code spawns subagents (Explore, Plan, etc.) that may use a different model than the main agent. Due to a [known bug](https://github.com/anthropics/claude-code/issues/29768), subagents sometimes inherit the parent model (e.g. Opus) instead of using Haiku. If one framework's run gets Opus subagents and the other gets Haiku, costs are not comparable.
+
+After both runs, verify that subagent models match:
+
+```bash
+# Check subagent models for each session
+for f in ~/.claude/projects/-*-wasp/<session-id>/subagents/*.jsonl; do
+  echo "$(basename $f): $(python3 -c "
+import json, sys
+models = set()
+for line in open(sys.argv[1]):
+    d = json.loads(line)
+    m = d.get('message',{}).get('model')
+    if m: models.add(m)
+print(', '.join(models))
+" "$f")"
+done
+```
+
+If subagent models differ between the two runs, either:
+- **Re-run** the affected framework until subagents match, or
+- **Report main-agent-only costs** (implementation phase has no subagents, so it's unaffected)
+
 ### Quick Comparison One-Liner
 
 After running both frameworks, compare side-by-side:
@@ -104,5 +154,6 @@ echo "=== NEXT.JS ===" && python3 measure_code_generation.py ~/.claude/projects/
 
 ## Fairness Concerns to Acknowledge
 
+1. **Subagent model variance** — Claude Code may assign different models to subagents across runs ([bug](https://github.com/anthropics/claude-code/issues/29768)). Verify models match post-test; re-run or report main-agent-only costs if they differ.
 2. **Training data favors Next.js** — Claude has seen far more Next.js code.
 3. **Codebase size** — Wasp has 40% fewer tokens to read. This is the point, not a confound.
