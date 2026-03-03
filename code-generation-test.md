@@ -52,7 +52,8 @@ Follow the existing patterns in the codebase for all of the above.
 2. **Verify both apps build** — `wasp compile` and `npm run build` (baseline: no pre-existing errors)
 3. **Verify `Megaphone` icon exists** — check both `node_modules/lucide-react` directories
 5. **Confirm same model** — check settings, use same model for both runs
-6. **Save prompt in a text file** — copy-paste character-for-character, no retyping
+6. **Pin subagent model** — set `export CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5-20251001` in your shell before each run. This prevents subagents from inheriting the parent model due to a [known bug](https://github.com/anthropics/claude-code/issues/29768). Verify after the test with the [subagent model check](#verifying-subagent-model-parity).
+7. **Save prompt in a text file** — copy-paste character-for-character, no retyping
 7. **Database running** — both apps should start with a seeded user + team
 
 ### Execution (for each framework)
