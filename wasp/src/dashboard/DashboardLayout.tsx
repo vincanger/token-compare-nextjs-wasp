@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, type Routes } from 'wasp/client/router'
+import { useLocation } from 'react-router'
 import { MainLayout } from '../MainLayout'
 import { Button } from '../components/ui/button'
-import { Users, Settings, Shield, Activity, Menu } from 'lucide-react'
+import { Users, Settings, Shield, Activity, Menu, type LucideIcon } from 'lucide-react'
 
-const navItems = [
+const navItems: { href: Routes['to']; icon: LucideIcon; label: string }[] = [
   { href: '/dashboard', icon: Users, label: 'Team' },
   { href: '/dashboard/general', icon: Settings, label: 'General' },
   { href: '/dashboard/activity', icon: Activity, label: 'Activity' },

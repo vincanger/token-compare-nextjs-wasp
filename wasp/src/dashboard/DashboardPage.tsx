@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery, getTeamForUser, removeTeamMember, inviteTeamMember } from 'wasp/client/operations'
+import { useQuery, getTeamForUser, getCustomerPortalUrl, removeTeamMember, inviteTeamMember } from 'wasp/client/operations'
 import { useAuth } from 'wasp/client/auth'
 import { DashboardLayout } from './DashboardLayout'
 import { Button } from '../components/ui/button'
@@ -11,6 +11,18 @@ import { Label } from '../components/ui/label'
 import { Loader2, PlusCircle } from 'lucide-react'
 
 function ManageSubscription({ teamData }: { teamData: any }) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  async function handleManageSubscription() {
+    setIsLoading(true)
+    try {
+      const url = await getCustomerPortalUrl()
+      window.location.href = url
+    } catch (e) {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -31,7 +43,17 @@ function ManageSubscription({ teamData }: { teamData: any }) {
                   : 'No active subscription'}
               </p>
             </div>
-            <Button variant="outline">Manage Subscription</Button>
+            <Button
+              variant="outline"
+              onClick={handleManageSubscription}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</>
+              ) : (
+                'Manage Subscription'
+              )}
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -108,10 +130,15 @@ function TeamMembers({ teamData }: { teamData: any }) {
   )
 }
 
-function InviteTeamMember() {
+function InviteTeamMember({ teamData }: { teamData: any }) {
   const { data: user } = useAuth()
   const [isInviting, setIsInviting] = useState(false)
   const [message, setMessage] = useState<{ error?: string; success?: string }>({})
+
+  const currentMember = teamData?.teamMembers?.find(
+    (m: any) => m.userId === user?.id
+  )
+  const isOwner = currentMember?.role === 'owner'
 
   async function handleInvite(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -137,11 +164,11 @@ function InviteTeamMember() {
         <form onSubmit={handleInvite} className="space-y-4">
           <div>
             <Label htmlFor="email" className="mb-2">Email</Label>
-            <Input id="email" name="email" type="email" placeholder="Enter email" required />
+            <Input id="email" name="email" type="email" placeholder="Enter email" required disabled={!isOwner} />
           </div>
           <div>
             <Label>Role</Label>
-            <RadioGroup defaultValue="member" name="role" className="flex space-x-4">
+            <RadioGroup defaultValue="member" name="role" className="flex space-x-4" disabled={!isOwner}>
               <div className="flex items-center space-x-2 mt-2">
                 <RadioGroupItem value="member" id="member" />
                 <Label htmlFor="member">Member</Label>
@@ -157,7 +184,7 @@ function InviteTeamMember() {
           <Button
             type="submit"
             className="bg-orange-500 hover:bg-orange-600 text-white"
-            disabled={isInviting}
+            disabled={isInviting || !isOwner}
           >
             {isInviting ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Inviting...</>
@@ -167,6 +194,13 @@ function InviteTeamMember() {
           </Button>
         </form>
       </CardContent>
+      {!isOwner && (
+        <CardFooter>
+          <p className="text-sm text-muted-foreground">
+            You must be a team owner to invite new members.
+          </p>
+        </CardFooter>
+      )}
     </Card>
   )
 }
@@ -182,7 +216,7 @@ export function DashboardPage() {
         <h1 className="text-lg lg:text-2xl font-medium mb-6">Team Settings</h1>
         <ManageSubscription teamData={teamData} />
         <TeamMembers teamData={teamData} />
-        <InviteTeamMember />
+        <InviteTeamMember teamData={teamData} />
       </section>
     </DashboardLayout>
   )

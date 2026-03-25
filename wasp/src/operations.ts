@@ -3,13 +3,28 @@ import type {
   GetActivityLogs,
   UpdateAccount,
   DeleteAccount,
-  UpdatePassword,
   RemoveTeamMember,
   InviteTeamMember,
 } from 'wasp/server/operations'
 import { HttpError } from 'wasp/server'
+import { findAuthIdentity, createProviderId, getProviderDataWithPassword } from 'wasp/server/auth'
+import { verifyPassword } from 'wasp/auth/password'
+import { z } from 'zod'
 
-// ── Helper ───────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────
+
+function validated<S extends z.ZodType, Args, Ctx, Result>(
+  schema: S,
+  fn: (data: z.infer<S>, context: Ctx) => Promise<Result>
+): (args: Args, context: Ctx) => Promise<Result> {
+  return async (args, context) => {
+    const result = schema.safeParse(args)
+    if (!result.success) {
+      throw new HttpError(400, result.error.errors[0].message)
+    }
+    return fn(result.data, context)
+  }
+}
 
 async function getTeamIdForUser(userId: string, entities: any): Promise<number | null> {
   const membership = await entities.TeamMember.findFirst({
@@ -81,10 +96,14 @@ export const getActivityLogs: GetActivityLogs<void, any> = async (_args, context
 
 // ── Actions ──────────────────────────────────────────────────
 
+const updateAccountSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100),
+})
+
 export const updateAccount: UpdateAccount<
   { name: string },
   { success: string }
-> = async ({ name }, context) => {
+> = validated(updateAccountSchema, async ({ name }, context) => {
   if (!context.user) throw new HttpError(401)
 
   const teamId = await getTeamIdForUser(context.user.id, context.entities)
@@ -96,10 +115,32 @@ export const updateAccount: UpdateAccount<
 
   await logActivity(context.entities, teamId, context.user.id, 'UPDATE_ACCOUNT')
   return { success: 'Account updated successfully.' }
-}
+})
 
-export const deleteAccount: DeleteAccount<void, void> = async (_args, context) => {
+const deleteAccountSchema = z.object({
+  password: z.string().min(8).max(100),
+})
+
+export const deleteAccount: DeleteAccount<
+  { password: string },
+  { error?: string }
+> = validated(deleteAccountSchema, async ({ password }, context) => {
   if (!context.user) throw new HttpError(401)
+
+  const email = context.user.identities.email?.id
+  if (!email) throw new HttpError(400, 'No email identity found')
+
+  const providerId = createProviderId('email', email)
+  const identity = await findAuthIdentity(providerId)
+  if (!identity) throw new HttpError(400, 'No email identity found')
+
+  const providerData = getProviderDataWithPassword<'email'>(identity.providerData)
+
+  try {
+    await verifyPassword(providerData.hashedPassword, password)
+  } catch {
+    return { error: 'Incorrect password. Account deletion failed.' }
+  }
 
   const teamId = await getTeamIdForUser(context.user.id, context.entities)
 
@@ -115,34 +156,18 @@ export const deleteAccount: DeleteAccount<void, void> = async (_args, context) =
       where: { userId: context.user.id, teamId },
     })
   }
-}
 
-export const updatePassword: UpdatePassword<
-  { currentPassword: string; newPassword: string; confirmPassword: string },
-  { success?: string; error?: string }
-> = async ({ currentPassword, newPassword, confirmPassword }, context) => {
-  if (!context.user) throw new HttpError(401)
+  return {}
+})
 
-  if (newPassword !== confirmPassword) {
-    return { error: 'New password and confirmation do not match.' }
-  }
-
-  if (currentPassword === newPassword) {
-    return { error: 'New password must be different from the current password.' }
-  }
-
-  // Wasp handles password validation internally via auth system
-  // For this demo, we log the activity and return success
-  const teamId = await getTeamIdForUser(context.user.id, context.entities)
-  await logActivity(context.entities, teamId, context.user.id, 'UPDATE_PASSWORD')
-
-  return { success: 'Password updated successfully.' }
-}
+const removeTeamMemberSchema = z.object({
+  memberId: z.number(),
+})
 
 export const removeTeamMember: RemoveTeamMember<
   { memberId: number },
   { success?: string; error?: string }
-> = async ({ memberId }, context) => {
+> = validated(removeTeamMemberSchema, async ({ memberId }, context) => {
   if (!context.user) throw new HttpError(401)
 
   const teamId = await getTeamIdForUser(context.user.id, context.entities)
@@ -154,12 +179,17 @@ export const removeTeamMember: RemoveTeamMember<
 
   await logActivity(context.entities, teamId, context.user.id, 'REMOVE_TEAM_MEMBER')
   return { success: 'Team member removed successfully' }
-}
+})
+
+const inviteTeamMemberSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['member', 'owner']),
+})
 
 export const inviteTeamMember: InviteTeamMember<
   { email: string; role: string },
   { success?: string; error?: string }
-> = async ({ email, role }, context) => {
+> = validated(inviteTeamMemberSchema, async ({ email, role }, context) => {
   if (!context.user) throw new HttpError(401)
 
   const teamId = await getTeamIdForUser(context.user.id, context.entities)
@@ -185,4 +215,4 @@ export const inviteTeamMember: InviteTeamMember<
 
   await logActivity(context.entities, teamId, context.user.id, 'INVITE_TEAM_MEMBER')
   return { success: 'Invitation sent successfully' }
-}
+})

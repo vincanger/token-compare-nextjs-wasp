@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link } from 'wasp/client/router'
 import { useAuth, logout } from 'wasp/client/auth'
 import { Button } from './components/ui/button'
 import { Avatar, AvatarFallback } from './components/ui/avatar'

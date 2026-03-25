@@ -5,7 +5,9 @@ import type {
   GenerateCheckoutSession,
 } from 'wasp/server/operations'
 import { HttpError, env } from 'wasp/server'
+import Stripe from 'stripe'
 import { stripe } from './stripe'
+import { z } from 'zod'
 
 export const getStripePrices: GetStripePrices<void, any> = async () => {
   const prices = await stripe.prices.list({
@@ -56,18 +58,89 @@ export const getCustomerPortalUrl: GetCustomerPortalUrl<void, string> = async (
     throw new HttpError(400, 'No active subscription')
   }
 
+  if (!membership.team.stripeProductId) {
+    throw new HttpError(400, 'No active subscription')
+  }
+
+  let configuration: Stripe.BillingPortal.Configuration
+  const configurations = await stripe.billingPortal.configurations.list()
+
+  if (configurations.data.length > 0) {
+    configuration = configurations.data[0]
+  } else {
+    const product = await stripe.products.retrieve(membership.team.stripeProductId)
+    if (!product.active) {
+      throw new HttpError(400, "Team's product is not active in Stripe")
+    }
+
+    const prices = await stripe.prices.list({
+      product: product.id,
+      active: true,
+    })
+    if (prices.data.length === 0) {
+      throw new HttpError(400, 'No active prices found for the product')
+    }
+
+    configuration = await stripe.billingPortal.configurations.create({
+      business_profile: {
+        headline: 'Manage your subscription',
+      },
+      features: {
+        subscription_update: {
+          enabled: true,
+          default_allowed_updates: ['price', 'quantity', 'promotion_code'],
+          proration_behavior: 'create_prorations',
+          products: [
+            {
+              product: product.id,
+              prices: prices.data.map((price) => price.id),
+            },
+          ],
+        },
+        subscription_cancel: {
+          enabled: true,
+          mode: 'at_period_end',
+          cancellation_reason: {
+            enabled: true,
+            options: [
+              'too_expensive',
+              'missing_features',
+              'switched_service',
+              'unused',
+              'other',
+            ],
+          },
+        },
+        payment_method_update: {
+          enabled: true,
+        },
+      },
+    })
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: membership.team.stripeCustomerId,
     return_url: `${env.WASP_WEB_CLIENT_URL}/dashboard`,
+    configuration: configuration.id,
   })
 
   return session.url
 }
 
+const checkoutSchema = z.object({
+  priceId: z.string().min(1, 'Price ID is required'),
+})
+
 export const generateCheckoutSession: GenerateCheckoutSession<
   { priceId: string },
   { url: string }
-> = async ({ priceId }, context) => {
+> = async (args, context) => {
+  const result = checkoutSchema.safeParse(args)
+  if (!result.success) {
+    throw new HttpError(400, result.error.errors[0].message)
+  }
+  const { priceId } = result.data
+
   if (!context.user) throw new HttpError(401)
 
   const membership = await context.entities.TeamMember.findFirst({

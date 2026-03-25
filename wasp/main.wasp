@@ -20,6 +20,7 @@ app saasStarter {
       },
     },
     onAfterSignup: import { onAfterSignup } from "@src/auth/hooks",
+    onAfterLogin: import { onAfterLogin } from "@src/auth/hooks",
     onAuthFailedRedirectTo: "/login",
     onAuthSucceededRedirectTo: "/dashboard",
   },
@@ -137,11 +138,6 @@ action updateAccount {
 
 action deleteAccount {
   fn: import { deleteAccount } from "@src/operations",
-  entities: [User, TeamMember, ActivityLog]
-}
-
-action updatePassword {
-  fn: import { updatePassword } from "@src/operations",
   entities: [User, TeamMember, ActivityLog]
 }
 

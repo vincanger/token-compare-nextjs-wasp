@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link } from 'wasp/client/router'
 import { MainLayout } from '../MainLayout'
 import { Button } from '../components/ui/button'
 import { ArrowRight, CreditCard, Database } from 'lucide-react'

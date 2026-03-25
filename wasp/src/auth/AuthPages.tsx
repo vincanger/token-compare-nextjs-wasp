@@ -5,7 +5,7 @@ import {
   ForgotPasswordForm,
   ResetPasswordForm,
 } from 'wasp/client/auth'
-import { Link } from 'react-router'
+import { Link } from 'wasp/client/router'
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
   return (

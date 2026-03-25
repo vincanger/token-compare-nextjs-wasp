@@ -41,12 +41,12 @@ See the [full benchmarking results](#full-benchmarking-results) for the complete
 | Metric                               | Next.js | Wasp       | Wasp's reduction |
 | ------------------------------------ | ------- | ---------- | ---------------- |
 | Total files                          | 47      | 32         | 32%              |
-| Total lines                          | 3,997   | 2,316      | 42%              |
-| Total tokens                         | 30,329  | 18,645     | 39%              |
-| App-specific tokens (excl shared UI) | 26,325  | **14,973** | **43%**          |
+| Total lines                          | 3,997   | 2,499      | 37%              |
+| Total tokens                         | 30,329  | 19,601     | 35%              |
+| App-specific tokens (excl shared UI) | 26,325  | **15,929** | **40%**          |
 
 
-The 41% token reduction during implementation tracks closely with the 43% fewer app-specific tokens in the codebase — the smaller context directly translates to fewer tokens consumed per turn.
+The 41% token reduction during implementation tracks closely with the 40% fewer app-specific tokens in the codebase — the smaller context directly translates to fewer tokens consumed per turn.
 
 ## What Was Measured
 
@@ -90,9 +90,9 @@ echo "=== NEXT.JS ===" && python3 measure_code_generation.py ~/.claude/projects/
 ## Wasp's Token Count Reduction
 
 - **15 files eliminated**
-- **11,352 app-specific tokens saved** — 43% less context an AI needs to understand and work with the codebase
-- Major savings come from **auth** (4,954 → 622 tokens, **87% reduction**) and **database** (3,832 → 440 tokens in `schema.prisma`, **89% reduction**) — Wasp handles all the boilerplate internally.
-- **App-specific token savings** (**43%**) are more meaningful than total savings (39%) because shared UI inflates both sides equally.
+- **10,396 app-specific tokens saved** — 40% less context an AI needs to understand and work with the codebase
+- Major savings come from **auth** (4,954 → 911 tokens, **82% reduction**) and **database** (3,832 → 440 tokens in `schema.prisma`, **89% reduction**) — Wasp handles all the boilerplate internally.
+- **App-specific token savings** (**40%**) are more meaningful than total savings (35%) because shared UI inflates both sides equally.
 
 ## Why Token Count & Context Efficiency Matter in the AI Era
 
